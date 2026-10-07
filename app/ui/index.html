@@ -19,7 +19,7 @@ html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--text);font:14px/1.55 "Segoe UI","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
   display:flex;flex-direction:column;overflow:hidden}
 button,input,select,textarea{font:inherit;color:inherit}
-button{cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 14px}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 14px;white-space:nowrap;word-break:keep-all}
 button:hover{background:var(--panel2)}
 button:disabled{opacity:.45;cursor:default}
 button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
@@ -94,6 +94,8 @@ main{flex:1;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap
 .field{margin-bottom:14px}
 .field>label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
 .inline{display:flex;gap:8px;align-items:center}
+.inline input{flex:1;min-width:0}
+.inline button{flex:none;font-size:13px;padding:8px 12px}
 .check{display:flex;gap:8px;align-items:flex-start;margin:6px 0;font-size:13px}
 .check input{margin-top:3px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
