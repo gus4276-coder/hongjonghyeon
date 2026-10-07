@@ -1,0 +1,7 @@
+{
+  "_설명": "관리자용 예시. 이름을 defaults.json 으로 바꿔 Setup.exe 와 같은 폴더에 두고 배포하면 설치 시 함께 적용됩니다. 사용자가 설정에서 바꾼 값이 항상 우선합니다.",
+  "keywords": ["하이플라자", "Hiplaza"],
+  "languages": ["ko", "en"],
+  "transcribe_model": "gpt-transcribe",
+  "analysis_model": "gpt-6-luna"
+}

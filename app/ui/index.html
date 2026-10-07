@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hiplaza 회의록</title>
+<style>
+:root{
+  --bg:#f5f6f8; --panel:#ffffff; --panel2:#f0f2f5; --line:#e3e6eb; --text:#1d2129; --muted:#6b7280;
+  --accent:#2563eb; --accent-2:#1d4ed8; --rec:#dc2626; --ok:#059669; --warn:#d97706;
+  --me:#2563eb; --them:#7c3aed; --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#0f1115;--panel:#171a21;--panel2:#1f232c;--line:#2a2f3a;--text:#e6e8ec;--muted:#9aa3b2;
+    --accent:#3b82f6;--accent-2:#60a5fa;--me:#60a5fa;--them:#a78bfa;--shadow:none}
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.55 "Segoe UI","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+  display:flex;flex-direction:column;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 14px}
+button:hover{background:var(--panel2)}
+button:disabled{opacity:.45;cursor:default}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+button.primary:hover{background:var(--accent-2)}
+button.rec{background:var(--rec);border-color:var(--rec);color:#fff;font-weight:600}
+button.ghost{border-color:transparent;background:transparent}
+button.ghost:hover{background:var(--panel2)}
+input[type=text],input[type=password],select,textarea{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical}
+
+header{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand{font-weight:700;font-size:15px;white-space:nowrap}
+.brand small{color:var(--muted);font-weight:400;margin-left:4px}
+#title{max-width:360px;flex:1 1 200px}
+.timer{font-variant-numeric:tabular-nums;font-size:18px;font-weight:600;min-width:84px;text-align:center}
+.pill{font-size:12px;padding:3px 10px;border-radius:999px;background:var(--panel2);color:var(--muted);white-space:nowrap}
+.pill.recording{background:rgba(220,38,38,.12);color:var(--rec)}
+.pill.recording::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--rec);margin-right:6px;animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.2}}
+.spacer{flex:1}
+.stat{font-size:12px;color:var(--muted);white-space:nowrap}
+.meters{display:flex;gap:10px;align-items:center}
+.meter{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.meter .bar{width:60px;height:6px;border-radius:3px;background:var(--panel2);overflow:hidden}
+.meter .bar i{display:block;height:100%;width:0;background:var(--ok);transition:width .15s}
+
+main{flex:1;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:12px;padding:12px;min-height:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);display:flex;flex-direction:column;min-height:0}
+.card-h{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.card-h h2{font-size:14px;margin:0;font-weight:600}
+.card-h input{max-width:180px;padding:5px 8px;font-size:13px}
+.card-b{flex:1;overflow:auto;padding:12px 14px;min-height:0}
+
+#transcript .row{display:grid;grid-template-columns:52px 64px 1fr;gap:8px;padding:5px 0;border-bottom:1px dashed transparent}
+#transcript .row:hover{background:var(--panel2);border-radius:6px}
+#transcript .ts{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;padding-top:2px}
+#transcript .sp{font-size:12px;font-weight:600;padding-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#transcript .sp.mic{color:var(--me)}#transcript .sp.system{color:var(--them)}
+#transcript .tx{word-break:keep-all;overflow-wrap:anywhere}
+#transcript mark{background:#fde68a;color:#111;border-radius:3px}
+.empty{color:var(--muted);text-align:center;margin-top:18%;line-height:1.9}
+.empty b{color:var(--text)}
+.pending{font-size:12px;color:var(--muted);padding:6px 0}
+
+#report h1{font-size:20px;margin:0 0 2px}
+#report h2{font-size:15px;margin:22px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+#report h3{font-size:14px;margin:16px 0 4px}
+#report .meta,#report .tr{color:var(--muted);font-size:12px;font-weight:400;margin-left:6px}
+#report .meta{margin-left:0}
+#report p{margin:4px 0}
+#report ul{margin:4px 0;padding-left:20px}
+#report table{border-collapse:collapse;width:100%;font-size:13px}
+#report th,#report td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+#report th{background:var(--panel2);font-weight:600}
+#report .pri{display:inline-block;padding:0 8px;border-radius:10px;font-size:12px;white-space:nowrap}
+#report .pri.high{background:rgba(220,38,38,.15);color:#ef4444}
+#report .pri.mid{background:rgba(217,119,6,.15);color:#d97706}
+#report .pri.low{background:rgba(37,99,235,.15);color:#3b82f6}
+#report .dec{color:var(--ok)}
+.analyze-form{display:flex;flex-direction:column;gap:10px}
+.analyze-form label{font-size:13px;color:var(--muted)}
+.hint{font-size:12px;color:var(--muted)}
+.spinner{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin:18% auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* modal & drawer */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:20}
+.overlay.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;width:min(640px,calc(100% - 32px));max-height:calc(100% - 48px);display:flex;flex-direction:column}
+.modal .card-b{padding:16px 18px}
+.field{margin-bottom:14px}
+.field>label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
+.inline{display:flex;gap:8px;align-items:center}
+.check{display:flex;gap:8px;align-items:flex-start;margin:6px 0;font-size:13px}
+.check input{margin-top:3px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-f{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
+#history-list .item{padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer}
+#history-list .item:hover{border-color:var(--accent)}
+#history-list .item small{color:var(--muted)}
+
+#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:30;max-width:min(420px,calc(100% - 32px))}
+.toast{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:10px 14px;box-shadow:0 6px 24px rgba(0,0,0,.15);font-size:13px;animation:in .2s}
+.toast.warn{border-left-color:var(--warn)}.toast.error{border-left-color:var(--rec)}.toast.ok{border-left-color:var(--ok)}
+@keyframes in{from{opacity:0;transform:translateY(6px)}}
+
+@media (max-width: 900px){ main{grid-template-columns:1fr;grid-template-rows:1fr 1fr} }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Hiplaza 회의록<small id="ver"></small></div>
+  <input id="title" type="text" placeholder="회의 제목 (선택)">
+  <button id="btn-rec" class="primary">● 녹음 시작</button>
+  <div class="timer" id="timer">00:00</div>
+  <span class="pill" id="state">대기</span>
+  <div class="meters">
+    <div class="meter" title="화상회의 상대방 소리">상대<span class="bar"><i id="lv-system"></i></span></div>
+    <div class="meter" title="내 마이크">나<span class="bar"><i id="lv-mic"></i></span></div>
+  </div>
+  <div class="spacer"></div>
+  <span class="stat" id="cost" title="이번 회의 예상 API 비용">$0.000</span>
+  <button class="ghost" id="btn-history" title="지난 회의">🗂 기록</button>
+  <button class="ghost" id="btn-settings" title="설정">⚙ 설정</button>
+</header>
+
+<main>
+  <section class="card">
+    <div class="card-h">
+      <h2>실시간 전사</h2><span class="stat" id="count"></span>
+      <div class="spacer"></div>
+      <input id="search" type="text" placeholder="검색">
+      <button class="ghost" id="btn-copy-tr" title="전사본 복사">⧉</button>
+    </div>
+    <div class="card-b" id="tr-wrap">
+      <div id="transcript"></div>
+      <div class="empty" id="tr-empty">
+        <b>화상회의를 시작한 뒤 ‘녹음 시작’을 누르세요.</b><br>
+        Zoom · Teams · Google Meet 등 앱에 상관없이<br>스피커로 나오는 소리와 내 마이크를 함께 받아 적습니다.
+      </div>
+      <div class="pending" id="pending"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-h">
+      <h2>회의 분석</h2>
+      <div class="spacer"></div>
+      <button class="ghost" id="btn-copy-md" style="display:none">⧉ 마크다운 복사</button>
+      <button class="ghost" id="btn-folder" style="display:none">📁 폴더 열기</button>
+    </div>
+    <div class="card-b" id="an-body"></div>
+  </section>
+</main>
+
+<!-- 설정 -->
+<div class="overlay" id="ov-settings">
+  <div class="modal">
+    <div class="card-h"><h2>설정</h2><div class="spacer"></div><button class="ghost" data-close>✕</button></div>
+    <div class="card-b">
+      <div class="field">
+        <label>OpenAI API 키</label>
+        <div class="inline"><input id="s-key" type="password" placeholder="sk-... (변경할 때만 입력)" autocomplete="off"><button id="btn-test">연결 테스트</button></div>
+        <div class="hint" id="s-key-state"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>전사 모델</label><input id="s-tmodel" type="text" list="dl-t"></div>
+        <div class="field"><label>분석 모델</label><input id="s-amodel" type="text" list="dl-a"></div>
+      </div>
+      <datalist id="dl-t"><option value="gpt-transcribe"><option value="gpt-4o-mini-transcribe"><option value="gpt-4o-transcribe"></datalist>
+      <datalist id="dl-a"><option value="gpt-6-luna"><option value="gpt-5-mini"><option value="gpt-6.1-sol"></datalist>
+      <div class="hint" style="margin:-8px 0 14px">기본값: gpt-transcribe(분당 약 $0.0045, 무음 제외) · gpt-6-luna(1시간 회의 분석 약 $0.01)</div>
+      <div class="field">
+        <label>캡처할 소리</label>
+        <label class="check"><input type="checkbox" id="s-sys"> 상대방 음성 (PC 스피커/이어폰으로 나오는 소리)</label>
+        <label class="check"><input type="checkbox" id="s-mic"> 내 목소리 (마이크)</label>
+        <label class="check"><input type="checkbox" id="s-echo"> 에코 방지 — 스피커로 듣는 경우 상대방 목소리가 마이크로 중복 전사되는 것을 막습니다 (헤드셋이면 꺼도 됨)</label>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>마이크 장치</label><select id="s-micdev"><option value="">기본 마이크</option></select></div>
+        <div class="field"><label>내 이름(화자 표시)</label><input id="s-name" type="text"></div>
+      </div>
+      <div class="field">
+        <label>언어 (ISO 코드, 공백 구분)</label><input id="s-lang" type="text" placeholder="ko en">
+      </div>
+      <div class="field">
+        <label>용어집 — 회사명·제품명·인명 등 (줄바꿈 구분)</label>
+        <textarea id="s-kw" rows="4" placeholder="하이플라자&#10;홍길동 팀장&#10;ERP"></textarea>
+        <div class="hint">고유명사 인식률이 크게 좋아집니다. 실제로 자주 나오는 단어만 넣으세요.</div>
+      </div>
+      <div class="field">
+        <label>저장 폴더</label>
+        <div class="inline"><input id="s-out" type="text"><button id="btn-choose">찾기</button></div>
+        <label class="check"><input type="checkbox" id="s-audio"> 발화 구간 오디오(WAV)도 저장</label>
+      </div>
+      <details><summary class="hint" style="cursor:pointer">고급</summary>
+        <div class="field" style="margin-top:10px"><label>API Base URL (사내 프록시 사용 시)</label><input id="s-base" type="text" placeholder="비워두면 api.openai.com"></div>
+      </details>
+    </div>
+    <div class="modal-f"><button data-close>취소</button><button class="primary" id="btn-save">저장</button></div>
+  </div>
+</div>
+
+<!-- 기록 -->
+<div class="overlay" id="ov-history">
+  <div class="modal">
+    <div class="card-h"><h2>지난 회의</h2><div class="spacer"></div><button class="ghost" id="btn-open-root">📁</button><button class="ghost" data-close>✕</button></div>
+    <div class="card-b" id="history-list"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let api = null, lastId = 0, state = "idle", entries = [], lastHtml = "", polling = false, reform = false;
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = sec => { sec = Math.max(0, Math.floor(sec)); const h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), s = sec%60;
+  return (h ? h + ":" : "") + String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0"); };
+
+function toast(text, level="info", ms=5000){
+  const d = document.createElement("div"); d.className = "toast " + level; d.textContent = text;
+  $("#toasts").appendChild(d); setTimeout(() => d.remove(), level === "error" ? 12000 : ms);
+}
+async function copy(text){
+  try { await navigator.clipboard.writeText(text); }
+  catch { const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
+  toast("클립보드에 복사했습니다.", "ok", 2000);
+}
+
+/* ---------------- transcript ---------------- */
+function rowHtml(e){
+  const q = $("#search").value.trim();
+  let tx = esc(e.text);
+  if (q) tx = tx.split(esc(q)).join("<mark>" + esc(q) + "</mark>");
+  return `<div class="row" data-t="${e.t_start}"><span class="ts">${fmt(e.t_start)}</span><span class="sp ${e.source}" title="${esc(e.speaker)}">${esc(e.speaker)}</span><span class="tx">${tx}</span></div>`;
+}
+function renderAll(){
+  const q = $("#search").value.trim();
+  const list = q ? entries.filter(e => e.text.includes(q)) : entries;
+  $("#transcript").innerHTML = list.map(rowHtml).join("");
+  $("#tr-empty").style.display = entries.length ? "none" : "";
+  $("#count").textContent = entries.length ? `${entries.length}개 발화` : "";
+}
+function addEntries(list){
+  if (!list.length) return;
+  const wrap = $("#tr-wrap");
+  const nearBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 80;
+  let outOfOrder = false;
+  for (const e of list){
+    if (entries.length && e.t_start < entries[entries.length-1].t_start) outOfOrder = true;
+    entries.push(e); lastId = Math.max(lastId, e.id + 1);
+  }
+  if (outOfOrder || $("#search").value.trim()){ entries.sort((a,b) => a.t_start - b.t_start); renderAll(); }
+  else { $("#transcript").insertAdjacentHTML("beforeend", list.map(rowHtml).join("")); $("#tr-empty").style.display = "none";
+         $("#count").textContent = `${entries.length}개 발화`; }
+  if (nearBottom) wrap.scrollTop = wrap.scrollHeight;
+}
+$("#search").addEventListener("input", renderAll);
+$("#btn-copy-tr").onclick = async () => { const t = await api.get_transcript(); if (t) copy(t); };
+
+/* ---------------- analysis panel ---------------- */
+function renderAnalysis(){
+  const b = $("#an-body");
+  $("#btn-copy-md").style.display = state === "done" ? "" : "none";
+  $("#btn-folder").style.display = ["stopped","done","analyzing"].includes(state) ? "" : "none";
+  if (state === "done"){
+    if (b.dataset.view !== "done" || b.dataset.html !== lastHtml){ b.innerHTML = `<div id="report">${lastHtml}</div>
+      <div style="margin-top:18px"><button id="btn-reanalyze">다시 분석</button></div>`;
+      b.dataset.view = "done"; b.dataset.html = lastHtml;
+      $("#btn-reanalyze").onclick = () => { reform = true; state = "stopped"; b.dataset.view = ""; applyState(); }; }
+    return;
+  }
+  if (b.dataset.view === state) return;
+  b.dataset.view = state;
+  if (state === "analyzing"){ b.innerHTML = `<div class="spinner"></div><div class="empty" style="margin-top:0" id="an-progress">분석 중…</div>`; return; }
+  if (state === "finishing"){ b.innerHTML = `<div class="spinner"></div><div class="empty" style="margin-top:0">남은 구간을 전사하고 있습니다…</div>`; return; }
+  if (state === "stopped"){
+    b.innerHTML = `<div class="analyze-form">
+      <div><b>녹음이 끝났습니다.</b> 전사본을 주제별로 요약하고 액션플랜을 뽑아냅니다.</div>
+      <label>회의 사전 정보 (선택) — 참석자 이름·역할, 안건 등을 적으면 담당자 지정이 정확해집니다.</label>
+      <textarea id="an-ctx" rows="5" placeholder="예) 참석: 김부장(영업), 이과장(개발), 박대리(디자인)&#10;안건: 3분기 신규 프로모션 일정"></textarea>
+      <div><button class="primary" id="btn-analyze">✨ 분석하기</button></div>
+      <div class="hint">저장 위치의 회의 폴더에 전사본.txt / 회의록.md / 회의록.html 이 생성됩니다.</div></div>`;
+    $("#btn-analyze").onclick = async () => {
+      const r = await api.analyze($("#title").value, $("#an-ctx").value);
+      if (!r.ok) toast(r.error, "error"); else { reform = false; state = "analyzing"; applyState(); }
+    };
+    return;
+  }
+  if (state === "recording"){ b.innerHTML = `<div class="empty">회의가 끝나면 <b>■ 종료</b>를 누르세요.<br>주제별 요약과 액션플랜을 만들어 드립니다.</div>`; return; }
+  b.innerHTML = `<div class="empty">녹음을 마치면 이곳에 회의록이 표시됩니다.<br><span class="hint">🗂 기록에서 지난 회의를 열 수도 있습니다.</span></div>`;
+}
+$("#btn-copy-md").onclick = async () => { const md = await api.get_markdown(); if (md) copy(md); };
+$("#btn-folder").onclick = () => api.open_folder("");
+
+/* ---------------- record control ---------------- */
+const STATE_LABEL = {idle:"대기", recording:"녹음 중", finishing:"마무리 중", stopped:"녹음 완료", analyzing:"분석 중", done:"완료"};
+function applyState(){
+  $("#state").textContent = STATE_LABEL[state] || state;
+  $("#state").className = "pill " + state;
+  const btn = $("#btn-rec");
+  if (state === "recording"){ btn.textContent = "■ 종료"; btn.className = "rec"; btn.disabled = false; }
+  else { btn.textContent = "● 새 녹음 시작"; btn.className = "primary"; btn.disabled = ["finishing","analyzing"].includes(state); }
+  if (state === "idle") btn.textContent = "● 녹음 시작";
+  renderAnalysis();
+}
+$("#btn-rec").onclick = async () => {
+  if (state === "recording"){
+    const r = await api.stop(); if (!r.ok) toast(r.error, "error"); else { state = "finishing"; applyState(); }
+    return;
+  }
+  const r = await api.start($("#title").value);
+  if (!r.ok){ toast(r.error, "error"); if (r.error.includes("API 키")) openSettings(); return; }
+  entries = []; lastId = 0; lastHtml = ""; reform = false; renderAll(); $("#an-body").dataset.view = "";
+  $("#title").value = r.title; state = "recording"; applyState();
+};
+
+/* ---------------- polling ---------------- */
+async function poll(){
+  if (polling) return; polling = true;
+  try {
+    const p = await api.poll(lastId);
+    addEntries(p.entries);
+    for (const m of p.messages){
+      if (state === "analyzing" && m.level === "info" && $("#an-progress")) $("#an-progress").textContent = m.text;
+      else toast(m.text, m.level);
+    }
+    if (p.analysis_html) lastHtml = p.analysis_html;
+    if (p.state !== state && !(reform && p.state === "done")){ state = p.state; applyState(); }
+    $("#timer").textContent = fmt(p.elapsed);
+    $("#cost").textContent = `$${p.cost.toFixed(3)} · 발화 ${p.speech_min}분`;
+    $("#pending").textContent = p.pending > 0 && state !== "idle" ? `전사 중 ${p.pending}…` : "";
+    for (const k of ["system","mic"]) $("#lv-" + k).style.width = Math.min(100, Math.sqrt(p.levels[k] || 0) * 140) + "%";
+  } catch (e) { console.error(e); }
+  finally { polling = false; }
+}
+
+/* ---------------- settings ---------------- */
+async function openSettings(){
+  const s = await api.get_settings();
+  $("#s-key").value = "";
+  $("#s-key-state").textContent = s.api_key_masked ? `저장된 키: ${s.api_key_masked}` : "아직 키가 없습니다. platform.openai.com → API keys 에서 발급하세요.";
+  $("#s-tmodel").value = s.transcribe_model; $("#s-amodel").value = s.analysis_model;
+  $("#s-sys").checked = s.capture_system; $("#s-mic").checked = s.capture_mic; $("#s-echo").checked = s.echo_guard;
+  $("#s-name").value = s.my_name; $("#s-lang").value = s.languages.join(" "); $("#s-kw").value = s.keywords.join("\n");
+  $("#s-out").value = s.output_dir; $("#s-audio").checked = s.save_audio; $("#s-base").value = s.base_url;
+  const mics = await api.list_mics();
+  $("#s-micdev").innerHTML = `<option value="">기본 마이크</option>` + mics.map(m => `<option ${m === s.mic_device ? "selected" : ""}>${esc(m)}</option>`).join("");
+  $("#ov-settings").classList.add("show");
+}
+function collectSettings(){
+  return { api_key: $("#s-key").value.trim(), transcribe_model: $("#s-tmodel").value, analysis_model: $("#s-amodel").value,
+    capture_system: $("#s-sys").checked, capture_mic: $("#s-mic").checked, echo_guard: $("#s-echo").checked,
+    mic_device: $("#s-micdev").value, my_name: $("#s-name").value || "나", languages: $("#s-lang").value,
+    keywords: $("#s-kw").value, output_dir: $("#s-out").value, save_audio: $("#s-audio").checked, base_url: $("#s-base").value };
+}
+$("#btn-settings").onclick = openSettings;
+$("#btn-save").onclick = async () => { await api.save_settings(collectSettings()); $("#ov-settings").classList.remove("show"); toast("저장했습니다.", "ok", 2000); };
+$("#btn-test").onclick = async () => {
+  const btn = $("#btn-test"); btn.disabled = true; btn.textContent = "확인 중…";
+  await api.save_settings(collectSettings());
+  const r = await api.test_api(); btn.disabled = false; btn.textContent = "연결 테스트";
+  const s = await api.get_settings(); $("#s-key").value = "";
+  $("#s-key-state").textContent = s.api_key_masked ? `저장된 키: ${s.api_key_masked}` : "";
+  if (r.ok) toast(r.warn || "연결 성공!", r.warn ? "warn" : "ok"); else toast("연결 실패: " + r.error, "error");
+};
+$("#btn-choose").onclick = async () => { const p = await api.choose_folder(); if (p) $("#s-out").value = p; };
+
+/* ---------------- history ---------------- */
+$("#btn-history").onclick = async () => {
+  const list = await api.history();
+  $("#history-list").innerHTML = list.length ? list.map(h => `<div class="item" data-path="${esc(h.path)}">
+    <div><b>${esc(h.title)}</b> ${h.analyzed ? "✅" : ""}</div>
+    <small>${esc((h.started_at || "").replace("T"," "))} · ${h.entries}개 발화</small></div>`).join("")
+    : `<div class="empty" style="margin:30px 0">저장된 회의가 없습니다.</div>`;
+  $("#history-list").querySelectorAll(".item").forEach(el => el.onclick = async () => {
+    const r = await api.open_session(el.dataset.path);
+    if (!r.ok) return toast(r.error, "error");
+    $("#ov-history").classList.remove("show");
+    entries = []; lastId = 0; lastHtml = ""; reform = false; renderAll(); $("#title").value = r.title; $("#an-body").dataset.view = "";
+    await poll();
+  });
+  $("#ov-history").classList.add("show");
+};
+$("#btn-open-root").onclick = async () => { const s = await api.get_settings(); api.open_folder(s.output_dir); };
+
+document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => b.closest(".overlay").classList.remove("show"));
+document.addEventListener("keydown", e => { if (e.key === "Escape") document.querySelectorAll(".overlay.show").forEach(o => o.classList.remove("show")); });
+
+/* ---------------- boot ---------------- */
+window.addEventListener("pywebviewready", async () => {
+  api = window.pywebview.api;
+  const info = await api.app_info(); $("#ver").textContent = "v" + info.version;
+  applyState();
+  const s = await api.get_settings();
+  if (!s.api_key_masked) openSettings();
+  setInterval(poll, 500);
+});
+</script>
+</body>
+</html>
