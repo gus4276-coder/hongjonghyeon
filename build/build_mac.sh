@@ -3,7 +3,7 @@
 # 사용: build/build_mac.sh [버전]   (Xcode Command Line Tools + Python 3.12 필요)
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION="${1:-${APP_VERSION:-1.1.0}}"
+VERSION="${1:-${APP_VERSION:-1.1.1}}"
 ARCH="$(uname -m)"
 export APP_VERSION="$VERSION"
 APP="dist/Hiplaza 회의록.app"

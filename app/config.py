@@ -10,7 +10,7 @@ from pathlib import Path
 
 APP_NAME = "HiplazaMeetingNotes"
 APP_TITLE = "Hiplaza 회의록"
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.1.1"
 
 # 2026-10 기준 가성비 모델 (설정에서 변경 가능)
 DEFAULT_TRANSCRIBE_MODEL = "gpt-transcribe"      # $0.0045/분, prompt·keywords·languages 지원

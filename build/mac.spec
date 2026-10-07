@@ -2,7 +2,7 @@
 # 사전: swiftc 로 macos/syscap 빌드 →  pyinstaller build/mac.spec --noconfirm
 import os
 ROOT = os.path.abspath(os.path.join(SPECPATH, ".."))
-VERSION = os.environ.get("APP_VERSION", "1.1.0")
+VERSION = os.environ.get("APP_VERSION", "1.1.1")
 
 a = Analysis(
     [os.path.join(ROOT, "run.py")],
