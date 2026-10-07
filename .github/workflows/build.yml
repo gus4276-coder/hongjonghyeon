@@ -1,4 +1,4 @@
-name: Build Windows
+name: Build
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
@@ -68,3 +68,38 @@ jobs:
           files: |
             dist/*.exe
             dist/*.zip
+
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15          # Apple Silicon (arm64)
+          - runner: macos-15-intel    # Intel (x86_64)
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Version
+        id: ver
+        run: |
+          V="${GITHUB_REF_NAME#v}"; [[ "$GITHUB_REF_TYPE" == "tag" ]] || V="dev"
+          echo "v=$V" >> "$GITHUB_OUTPUT"
+
+      - name: Build .app + DMG
+        run: PYTHON=python build/build_mac.sh "${{ steps.ver.outputs.v }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HiplazaMeetingNotes-macOS-${{ matrix.runner }}-${{ steps.ver.outputs.v }}
+          path: dist/*.dmg
+
+      - name: Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.dmg

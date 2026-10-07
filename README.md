@@ -1,6 +1,6 @@
 # Hiplaza 회의록
 
-Windows용 화상회의 **실시간 전사 + 회의 종료 후 주제별 요약 · 액션플랜 추출** 프로그램입니다.
+Windows · macOS용 화상회의 **실시간 전사 + 회의 종료 후 주제별 요약 · 액션플랜 추출** 프로그램입니다.
 Zoom · Teams · Google Meet · Webex 등 **어떤 회의 앱이든 상관없이** PC 스피커로 나오는 소리(상대방)와 마이크(나)를 함께 받아 적습니다.
 
 | 단계 | 사용 모델 (2026-10 기준) | 비용 |
@@ -30,6 +30,25 @@ Zoom · Teams · Google Meet · Webex 등 **어떤 회의 앱이든 상관없이
    - `analysis.json`, `session.json`: 원본 데이터
 
 **🗂 기록** 버튼으로 지난 회의를 다시 열거나 분석할 수 있습니다. 회의 중에 프로그램이나 PC가 꺼져도 그때까지 전사된 내용은 `transcript.live.jsonl` 에 남아 있고, 다음 실행 때 자동으로 복구됩니다.
+
+### macOS 설치 (macOS 13 Ventura 이상)
+
+1. 내 Mac 칩에 맞는 DMG 를 받습니다. Apple 메뉴 → 이 Mac에 관하여 에서 확인할 수 있습니다.
+   - Apple 칩(M1~M4): `HiplazaMeetingNotes-macOS-arm64-x.y.z.dmg`
+   - Intel: `HiplazaMeetingNotes-macOS-x86_64-x.y.z.dmg`
+2. DMG 를 열고 **Hiplaza 회의록** 을 **Applications** 폴더로 끌어다 놓습니다.
+3. 처음 열 때 “확인되지 않은 개발자” 경고가 뜨면 이렇게 엽니다(Apple 유료 개발자 서명을 하지 않은 사내용 앱이라 처음 한 번 필요합니다).
+   - **시스템 설정 → 개인정보 보호 및 보안** 맨 아래의 **그래도 열기**를 누릅니다.
+   - “손상되었기 때문에 열 수 없습니다”라고 나오면 터미널에서 아래 명령을 한 번 실행합니다.
+     ```bash
+     xattr -dr com.apple.quarantine "/Applications/Hiplaza 회의록.app"
+     ```
+4. 처음 **녹음 시작**을 누르면 권한 요청이 두 번 뜹니다.
+   - **마이크**: 허용
+   - **화면 및 시스템 오디오 녹음**: 상대방 목소리를 받는 데 필요합니다(화면은 녹화하지 않습니다). 설정 창이 열리면 Hiplaza 회의록을 켠 뒤 **앱을 종료했다가 다시 실행**합니다.
+
+Mac 은 BlackHole 같은 가상 오디오 드라이버가 **필요 없습니다**. macOS 기본 기능인 ScreenCaptureKit 으로 시스템 소리를 바로 받습니다. 이어폰을 써도 상대방 소리가 잡히고, 출력 장치를 바꿔도 그대로 이어집니다.
+> 앱을 새 버전으로 업데이트하면 macOS가 권한을 다시 물을 수 있습니다(서명이 바뀌기 때문). 그때 다시 허용하면 됩니다.
 
 ### 헤드셋 vs 스피커
 - **헤드셋/이어폰**: 상대방 소리는 `참석자`, 내 목소리는 `나` 로 정확히 구분됩니다. 설정에서 *에코 방지*를 꺼도 됩니다.
@@ -66,17 +85,27 @@ Zoom · Teams · Google Meet · Webex 등 **어떤 회의 앱이든 상관없이
 3. Actions 가 끝나면 Releases 에 `Setup.exe` 와 `Portable.zip` 이 올라옵니다. 이 링크를 사내에 공유하면 됩니다.
    (태그 없이 Actions 탭에서 *Run workflow* 를 눌러도 Artifacts 로 받을 수 있습니다.)
 
-### 방법 B. Windows PC 에서 직접
-Python 3.12와 [Inno Setup 6](https://jrsoftware.org/isdl.php)를 설치한 뒤 `build\build.bat` 를 실행합니다. 결과는 `dist\` 폴더에 생깁니다.
+### 방법 B. 직접 빌드
+- **Windows**: Python 3.12와 [Inno Setup 6](https://jrsoftware.org/isdl.php)를 설치한 뒤 `build\build.bat` 를 실행합니다. 결과는 `dist\` 폴더에 생깁니다.
+- **macOS**: Xcode Command Line Tools(`xcode-select --install`)와 Python 3.12가 필요합니다. 아래 명령을 실행하면 지금 Mac 의 칩에 맞는 DMG 가 `dist/` 에 생깁니다.
+  ```bash
+  build/build_mac.sh
+  ```
+
+태그를 push 하면 GitHub Actions 가 **Windows Setup.exe / Portable.zip** 과 **macOS DMG(arm64, x86_64)** 를 한꺼번에 만듭니다.
 
 ### 회사 공통 설정 일괄 배포
 `defaults.example.json` 을 `defaults.json` 으로 복사해 용어집과 모델을 채웁니다. 이 파일을 `Setup.exe` 와 같은 폴더에 두고 함께 배포하면 설치할 때 적용됩니다. 사용자가 설정에서 바꾼 값이 항상 우선합니다.
 > `defaults.json` 에 `"api_key"` 를 넣을 수도 있지만, 파일이 유출되면 키도 함께 유출됩니다. 가능하면 사용자별 키나 [프로젝트 키](https://platform.openai.com/api-keys)를 쓰고, 사용량 한도를 걸어 두세요.
 
-### 개발 실행 (Mac/Linux 는 마이크만 지원)
+### 개발 실행
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt && .venv/bin/python run.py
 ```
+- Mac 에서 시스템 소리까지 받으려면 먼저 도우미를 컴파일하고, 터미널 앱에 ‘화면 및 시스템 오디오 녹음’ 권한을 줍니다.
+  ```bash
+  xcrun swiftc -O macos/syscap.swift -o macos/syscap
+  ```
 - `STT_TEST_FILE=sample.wav` 를 설정하면 장치 대신 WAV 파일을 실시간으로 흘려 테스트합니다. `STT_DEBUG=1` 은 WebView 개발자 도구를 켭니다.
 
 ---
@@ -85,7 +114,8 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt && .venv/bin/
 ```
 run.py                  진입점
 app/main.py             pywebview 창, JS↔Python API, 상태 관리
-app/audio_capture.py    WASAPI loopback + 마이크 캡처, 장치 변경 감시, 리샘플
+app/audio_capture.py    Windows: WASAPI loopback / macOS: syscap 도우미 + 마이크, 장치 변경 감시, 리샘플
+macos/syscap.swift      macOS 시스템 소리 캡처 도우미 (ScreenCaptureKit → 16 kHz PCM stdout)
 app/vad.py              VAD + 발화 분할
 app/transcriber.py      병렬 전사, 재시도, 환각 필터
 app/analyzer.py         주제별 요약·액션플랜 (Structured Outputs, map-reduce)
@@ -93,7 +123,7 @@ app/report.py           회의록 HTML 렌더링
 app/session.py          세션 저장, 크래시 복구, 기록 목록
 app/config.py           설정, DPAPI 키 암호화, 모델/단가
 app/ui/index.html       UI (단일 파일, 다크모드 지원)
-build/                  PyInstaller spec, Inno Setup 스크립트, build.bat
+build/                  PyInstaller spec(Windows/mac), Inno Setup, build.bat, build_mac.sh
 ```
 
 ## 문제 해결
@@ -103,7 +133,8 @@ build/                  PyInstaller spec, Inno Setup 스크립트, build.bat
 | ‘나’ 레벨 바가 움직이지 않음 | 설정에서 마이크 장치를 선택하고, Windows 개인정보 설정에서 *마이크 접근*을 허용 |
 | 같은 말이 두 번 적힘 | 설정에서 *에코 방지*를 켜거나 헤드셋을 사용 |
 | 인증 오류 | API 키와 결제 수단(크레딧)을 확인 |
-| 기타 | 로그 파일: `%APPDATA%\HiplazaMeetingNotes\app.log` |
+| (Mac) 상대 소리가 안 잡힘 | 시스템 설정 → 개인정보 보호 및 보안 → 화면 및 시스템 오디오 녹음에서 앱을 켜고 **앱 재실행** |
+| 기타 | 로그 파일: Windows `%APPDATA%\HiplazaMeetingNotes\app.log` · Mac `~/Library/Application Support/HiplazaMeetingNotes/app.log` |
 
 ## 개인정보
 음성은 발화 구간만 OpenAI API로 전송됩니다. OpenAI API 데이터는 기본적으로 모델 학습에 쓰이지 않습니다. 전사본과 회의록은 각 PC의 로컬 폴더에만 저장됩니다. 회의를 녹음하기 전에 참석자에게 알리세요.

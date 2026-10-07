@@ -1,7 +1,8 @@
 """오디오 캡처.
 
 Windows: WASAPI loopback(스피커로 나오는 화상회의 음성 = Zoom/Teams/Meet 등 앱 무관) + 마이크.
-기타 OS: 개발용으로 마이크만 지원.
+macOS: ScreenCaptureKit 도우미(syscap, Swift) 로 시스템 소리 + sounddevice 마이크.
+Linux: 개발용으로 마이크만 지원.
 
 콜백 스레드에서는 바이트를 큐에 넣기만 하고, 변환/리샘플/VAD는 소스별 워커 스레드에서 처리한다.
 """
@@ -26,6 +27,7 @@ except Exception:  # pragma: no cover
     soxr = None
 
 IS_WIN = sys.platform == "win32"
+IS_MAC = sys.platform == "darwin"
 if IS_WIN:
     import pyaudiowpatch as pyaudio  # type: ignore
 else:
@@ -305,6 +307,85 @@ class DevCapture:
             w.stop()
 
 
+class MacCapture(DevCapture):
+    """시스템 소리는 syscap 도우미 프로세스(16 kHz mono float32 stdout)로, 마이크는 sounddevice 로 받는다."""
+
+    PERM_MSG = ("시스템 소리 녹음 권한이 필요합니다. 시스템 설정 → 개인정보 보호 및 보안 → "
+                "‘화면 및 시스템 오디오 녹음’에서 Hiplaza 회의록을 켠 뒤 앱을 다시 실행하세요.")
+
+    def __init__(self, on_audio, capture_system: bool, capture_mic: bool, mic_device: str = ""):
+        super().__init__(on_audio, False, capture_mic, mic_device)
+        self.want_system = capture_system
+        self._proc = None
+
+    @staticmethod
+    def helper_path() -> str:
+        from pathlib import Path
+        base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent / "macos"))
+        return str(base / "syscap")
+
+    def _start_system(self) -> None:
+        import subprocess
+        proc = subprocess.Popen([self.helper_path()], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, bufsize=0)
+        status: list[str] = []
+        ready = threading.Event()
+
+        def read_err():
+            for line in iter(proc.stderr.readline, b""):
+                msg = line.decode("utf-8", "replace").strip()
+                log.info("syscap: %s", msg)
+                if not ready.is_set():
+                    status.append(msg)
+                    ready.set()
+
+        threading.Thread(target=read_err, daemon=True).start()
+        if not ready.wait(10) or not status or status[0] != "READY":
+            proc.kill()
+            st = status[0] if status else "timeout"
+            if st == "ERR_PERMISSION":
+                subprocess.Popen(["open", "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"])
+                raise PermissionError(self.PERM_MSG)
+            raise RuntimeError(f"시스템 소리 캡처 실패: {st}")
+
+        w = SourceWorker("system", SR, 1, self.on_audio, self.t0)
+        self.workers["system"] = w
+        self._proc = proc
+
+        def read_out():
+            while True:
+                chunk = proc.stdout.read(3200)   # 50 ms
+                if not chunk:
+                    break
+                w.push(chunk[: len(chunk) // 4 * 4])
+        threading.Thread(target=read_out, daemon=True).start()
+
+    def start(self) -> None:
+        if self.want_system:
+            try:
+                self._start_system()
+            except Exception as e:
+                self.errors.append(str(e))
+        if self.want_mic and sd is not None:
+            try:
+                super().start()
+            except Exception as e:
+                self.errors.append(f"마이크를 열 수 없습니다: {e} (시스템 설정 → 개인정보 보호 및 보안 → 마이크 확인)")
+        if not self.workers:
+            raise RuntimeError(" / ".join(self.errors) or "오디오 장치를 열지 못했습니다.")
+
+    def stop(self) -> None:
+        if self._proc:
+            try:
+                self._proc.stdin.close()
+                self._proc.terminate()
+                self._proc.wait(3)
+            except Exception:
+                self._proc.kill()
+            self._proc = None
+        super().stop()
+
+
 class FileCapture:
     """테스트용: WAV 파일을 실제 시간(또는 speed 배속)으로 흘려보낸다. 환경변수 STT_TEST_FILE."""
 
@@ -354,7 +435,7 @@ def make_capture(on_audio, capture_system: bool, capture_mic: bool, mic_device: 
     test = os.environ.get("STT_TEST_FILE")
     if test:
         return FileCapture(test, on_audio, float(os.environ.get("STT_TEST_SPEED", "1")))
-    cls = WindowsCapture if IS_WIN else DevCapture
+    cls = WindowsCapture if IS_WIN else MacCapture if IS_MAC else DevCapture
     return cls(on_audio, capture_system, capture_mic, mic_device)
 
 

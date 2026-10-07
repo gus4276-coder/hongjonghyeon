@@ -4,3 +4,5 @@ build/work/
 dist/
 *.spec.bak
 defaults.json
+macos/syscap
+build/work-mac/

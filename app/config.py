@@ -1,4 +1,4 @@
-"""설정 저장/로드. API 키는 Windows DPAPI(현재 사용자 계정에 묶인 암호화)로 보관한다."""
+"""설정 저장/로드. API 키는 Windows DPAPI / macOS 키체인에 보관한다."""
 from __future__ import annotations
 
 import base64
@@ -10,7 +10,7 @@ from pathlib import Path
 
 APP_NAME = "HiplazaMeetingNotes"
 APP_TITLE = "Hiplaza 회의록"
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.1.0"
 
 # 2026-10 기준 가성비 모델 (설정에서 변경 가능)
 DEFAULT_TRANSCRIBE_MODEL = "gpt-transcribe"      # $0.0045/분, prompt·keywords·languages 지원
@@ -56,9 +56,29 @@ LOG_PATH = _appdata_dir() / "app.log"
 
 
 # ---------------------------------------------------------------- DPAPI
+_KC_SERVICE = APP_NAME
+_KC_ACCOUNT = "openai_api_key"
+
+
+def _keychain_set(text: str) -> bool:
+    import subprocess
+    r = subprocess.run(["/usr/bin/security", "add-generic-password", "-U", "-s", _KC_SERVICE, "-a", _KC_ACCOUNT,
+                        "-w", text], capture_output=True)
+    return r.returncode == 0
+
+
+def _keychain_get() -> str:
+    import subprocess
+    r = subprocess.run(["/usr/bin/security", "find-generic-password", "-s", _KC_SERVICE, "-a", _KC_ACCOUNT, "-w"],
+                       capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else ""
+
+
 def _protect(text: str) -> str:
     if not text:
         return ""
+    if sys.platform == "darwin" and _keychain_set(text):
+        return "keychain:"
     if sys.platform != "win32":
         return "b64:" + base64.b64encode(text.encode()).decode()
     import ctypes
@@ -82,6 +102,8 @@ def _protect(text: str) -> str:
 def _unprotect(blob: str) -> str:
     if not blob:
         return ""
+    if blob == "keychain:":
+        return _keychain_get()
     if blob.startswith("b64:"):
         return base64.b64decode(blob[4:]).decode()
     if blob.startswith("dpapi:") and sys.platform == "win32":
@@ -123,9 +145,14 @@ class Settings:
     # --- api key helpers
     @property
     def api_key(self) -> str:
-        return _unprotect(self.api_key_enc) or os.environ.get("OPENAI_API_KEY", "")
+        cache = self.__dict__.get("_key_cache")
+        if cache is None or cache[0] != self.api_key_enc:
+            cache = (self.api_key_enc, _unprotect(self.api_key_enc))
+            self.__dict__["_key_cache"] = cache
+        return cache[1] or os.environ.get("OPENAI_API_KEY", "")
 
     def set_api_key(self, key: str) -> None:
+        self.__dict__.pop("_key_cache", None)
         self.api_key_enc = _protect(key.strip())
 
     def to_public(self) -> dict:
@@ -137,10 +164,11 @@ class Settings:
 
 
 def _merge_admin_defaults(data: dict) -> dict:
-    """설치 폴더의 defaults.json(관리자 배포용)을 사용자 설정 아래에 깐다."""
+    """설치 폴더(또는 설정 폴더)의 defaults.json(관리자 배포용)을 사용자 설정 아래에 깐다."""
     exe_dir = Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent.parent
-    p = exe_dir / "defaults.json"
-    if p.exists():
+    candidates = [exe_dir / "defaults.json", _appdata_dir() / "defaults.json"]
+    p = next((c for c in candidates if c.exists()), None)
+    if p:
         try:
             admin = json.loads(p.read_text("utf-8"))
             if "api_key" in admin and not data.get("api_key_enc"):
