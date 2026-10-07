@@ -8,6 +8,7 @@ a = Analysis(
     pathex=[ROOT],
     datas=[(os.path.join(ROOT, "app", "ui"), "app/ui")],
     hiddenimports=["webview.platforms.edgechromium", "clr_loader", "pythonnet"],
+    hookspath=[os.path.join(SPECPATH, "hooks")],
     excludes=["tkinter", "matplotlib", "scipy", "pandas", "PIL", "IPython", "pytest",
               "webview.platforms.qt", "webview.platforms.gtk", "webview.platforms.cef", "PyQt5", "PyQt6", "PySide6"],
     noarchive=False,

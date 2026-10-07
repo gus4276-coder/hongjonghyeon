@@ -12,9 +12,9 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -28,13 +28,20 @@ jobs:
         run: python -c "import app.main, pyaudiowpatch, webrtcvad, soxr, webview; print('ok')"
 
       - name: PyInstaller
-        run: pyinstaller build/app.spec --noconfirm --distpath dist --workpath build/work
+        shell: bash
+        run: |
+          set -o pipefail
+          pyinstaller build/app.spec --noconfirm --distpath dist --workpath build/work 2>&1 | tee pyinstaller.log || {
+            # 실패 원인을 로그인 없이 볼 수 있는 annotation 으로 남긴다
+            grep -E "ERROR|Error|Traceback" pyinstaller.log | tail -n 15 | while IFS= read -r l; do echo "::error::$l"; done
+            exit 1; }
+          test -f dist/HiplazaMeetingNotes/HiplazaMeetingNotes.exe
 
       - name: Version
         id: ver
         shell: bash
         run: |
-          V="${GITHUB_REF_NAME#v}"; [[ "$GITHUB_REF_TYPE" == "tag" ]] || V="1.0.0"
+          V="${GITHUB_REF_NAME#v}"; [[ "$GITHUB_REF_TYPE" == "tag" ]] || V="dev"
           echo "v=$V" >> "$GITHUB_OUTPUT"
 
       - name: Installer (Inno Setup)

@@ -2,7 +2,7 @@
 #define AppName "Hiplaza 회의록"
 #define AppExe "HiplazaMeetingNotes.exe"
 #ifndef AppVersion
-  #define AppVersion "1.0.0"
+  #define AppVersion "1.0.1"
 #endif
 
 [Setup]
