@@ -189,7 +189,8 @@ class Controller:
             self.state = "done"
         except Exception as e:
             log.exception("analyze")
-            self.notify("error", f"분석 실패: {e}")
+            from .net import diagnose
+            self.notify("error", f"분석 실패: {diagnose(e)}")
             self.state = "stopped"
 
     # ---------------------------------------------------------------- history
@@ -261,7 +262,7 @@ class Api:
         s = self._ctl.settings
         if data.get("api_key"):
             s.set_api_key(data["api_key"])
-        for k in ("base_url", "transcribe_model", "analysis_model", "mic_device", "my_name", "output_dir"):
+        for k in ("base_url", "proxy", "transcribe_model", "analysis_model", "mic_device", "my_name", "output_dir"):
             if k in data:
                 setattr(s, k, str(data[k]).strip())
         for k in ("capture_system", "capture_mic", "echo_guard", "save_audio"):
@@ -285,15 +286,16 @@ class Api:
                 try:
                     c.models.retrieve(m)
                 except Exception as e:  # noqa
-                    if getattr(e, "status_code", None) == 404:
-                        missing.append(m)
-                    elif getattr(e, "status_code", None) in (401, 403):
-                        raise
+                    if getattr(e, "status_code", None) != 404:
+                        raise  # 네트워크/인증 오류는 실패로 보고
+                    missing.append(m)
             if missing:
                 return {"ok": True, "warn": f"연결 성공. 단, 이 키로 쓸 수 없는 모델: {', '.join(missing)} (자동으로 대체 모델 사용)"}
             return {"ok": True}
         except Exception as e:
-            return {"ok": False, "error": str(e)[:300]}
+            from .net import describe, diagnose
+            log.warning("test_api failed: %r (%s)", e, describe())
+            return {"ok": False, "error": diagnose(e), "net": describe()}
 
     def list_mics(self):
         return audio_capture.list_mics()
