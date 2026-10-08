@@ -129,7 +129,8 @@ def _unprotect(blob: str) -> str:
 @dataclass
 class Settings:
     api_key_enc: str = ""
-    base_url: str = ""                       # 프록시/사내 게이트웨이 사용 시
+    base_url: str = ""                       # 사내 게이트웨이(OpenAI 호환) 사용 시
+    proxy: str = ""                          # "" = 시스템 프록시 자동, "none" = 직접 연결, 또는 http://host:port
     transcribe_model: str = DEFAULT_TRANSCRIBE_MODEL
     analysis_model: str = DEFAULT_ANALYSIS_MODEL
     languages: list[str] = field(default_factory=lambda: ["ko", "en"])
