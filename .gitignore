@@ -6,3 +6,4 @@ dist/
 defaults.json
 macos/syscap
 build/work-mac/
+.DS_Store

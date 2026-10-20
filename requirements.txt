@@ -1,7 +1,8 @@
-openai>=2.0
+openai>=3.0
 pywebview>=5.3
 numpy>=2.0
 soxr>=0.5
+truststore>=0.10
 webrtcvad-wheels>=2.0.14
 PyAudioWPatch>=0.2.12.7; sys_platform == "win32"
 sounddevice>=0.5; sys_platform != "win32"

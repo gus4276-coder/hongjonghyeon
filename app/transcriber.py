@@ -40,8 +40,10 @@ def to_wav_bytes(audio: np.ndarray) -> bytes:
 
 
 def make_client(settings: Settings, timeout: float = 60) -> openai.OpenAI:
+    from .net import http_client
     return openai.OpenAI(api_key=settings.api_key, base_url=settings.base_url or None,
-                         max_retries=3, timeout=timeout)
+                         max_retries=3, timeout=timeout,
+                         http_client=http_client(settings.proxy, timeout))
 
 
 class Transcriber:
@@ -103,14 +105,19 @@ class Transcriber:
                     break
                 except (openai.APIConnectionError, openai.RateLimitError, openai.InternalServerError, openai.APITimeoutError) as e:
                     wait = (5, 15, 30, 0)[attempt]
-                    self.on_status("warn", f"전사 재시도 중… ({type(e).__name__})")
+                    if attempt == 0 and isinstance(e, openai.APIConnectionError):
+                        from .net import diagnose
+                        self.on_status("warn", "전사 연결 실패, 재시도 중… " + diagnose(e))
+                    else:
+                        self.on_status("warn", f"전사 재시도 중… ({type(e).__name__})")
                     if wait:
                         time.sleep(wait)
                 except openai.AuthenticationError:
                     self.on_status("error", "API 키가 올바르지 않습니다. 설정을 확인하세요.")
                     break
                 except openai.PermissionDeniedError as e:
-                    self.on_status("error", f"API 권한 오류: {e.message}")
+                    from .net import diagnose
+                    self.on_status("error", diagnose(e))
                     break
             if text is None:
                 with self._lock:

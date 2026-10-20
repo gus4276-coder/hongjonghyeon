@@ -199,7 +199,10 @@ main{flex:1;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap
         <label class="check"><input type="checkbox" id="s-audio"> 발화 구간 오디오(WAV)도 저장</label>
       </div>
       <details><summary class="hint" style="cursor:pointer">고급</summary>
-        <div class="field" style="margin-top:10px"><label>API Base URL (사내 프록시 사용 시)</label><input id="s-base" type="text" placeholder="비워두면 api.openai.com"></div>
+        <div class="field" style="margin-top:10px"><label>프록시 서버 (사내망)</label><input id="s-proxy" type="text" placeholder="비워두면 시스템(인터넷 옵션) 프록시 자동 사용 · 예: http://proxy.company.com:8080 · 직접 연결은 none">
+          <div class="hint">브라우저로는 인터넷이 되는데 연결 테스트가 실패하면, 브라우저와 같은 프록시 주소를 넣으세요(IT 부서 문의).</div></div>
+        <div class="field"><label>API Base URL (회사 승인 게이트웨이)</label><input id="s-base" type="text" placeholder="비워두면 https://api.openai.com/v1"></div>
+        <div class="hint" id="s-net"></div>
       </details>
     </div>
     <div class="modal-f"><button data-close>취소</button><button class="primary" id="btn-save">저장</button></div>
@@ -350,7 +353,7 @@ async function openSettings(){
   $("#s-tmodel").value = s.transcribe_model; $("#s-amodel").value = s.analysis_model;
   $("#s-sys").checked = s.capture_system; $("#s-mic").checked = s.capture_mic; $("#s-echo").checked = s.echo_guard;
   $("#s-name").value = s.my_name; $("#s-lang").value = s.languages.join(" "); $("#s-kw").value = s.keywords.join("\n");
-  $("#s-out").value = s.output_dir; $("#s-audio").checked = s.save_audio; $("#s-base").value = s.base_url;
+  $("#s-out").value = s.output_dir; $("#s-audio").checked = s.save_audio; $("#s-base").value = s.base_url; $("#s-proxy").value = s.proxy || "";
   const mics = await api.list_mics();
   $("#s-micdev").innerHTML = `<option value="">기본 마이크</option>` + mics.map(m => `<option ${m === s.mic_device ? "selected" : ""}>${esc(m)}</option>`).join("");
   $("#ov-settings").classList.add("show");
@@ -359,7 +362,7 @@ function collectSettings(){
   return { api_key: $("#s-key").value.trim(), transcribe_model: $("#s-tmodel").value, analysis_model: $("#s-amodel").value,
     capture_system: $("#s-sys").checked, capture_mic: $("#s-mic").checked, echo_guard: $("#s-echo").checked,
     mic_device: $("#s-micdev").value, my_name: $("#s-name").value || "나", languages: $("#s-lang").value,
-    keywords: $("#s-kw").value, output_dir: $("#s-out").value, save_audio: $("#s-audio").checked, base_url: $("#s-base").value };
+    keywords: $("#s-kw").value, output_dir: $("#s-out").value, save_audio: $("#s-audio").checked, base_url: $("#s-base").value, proxy: $("#s-proxy").value };
 }
 $("#btn-settings").onclick = openSettings;
 $("#btn-save").onclick = async () => { await api.save_settings(collectSettings()); $("#ov-settings").classList.remove("show"); toast("저장했습니다.", "ok", 2000); };
@@ -369,7 +372,9 @@ $("#btn-test").onclick = async () => {
   const r = await api.test_api(); btn.disabled = false; btn.textContent = "연결 테스트";
   const s = await api.get_settings(); $("#s-key").value = "";
   $("#s-key-state").textContent = s.api_key_masked ? `저장된 키: ${s.api_key_masked}` : "";
-  if (r.ok) toast(r.warn || "연결 성공!", r.warn ? "warn" : "ok"); else toast("연결 실패: " + r.error, "error");
+  $("#s-net").textContent = r.net || "";
+  if (r.ok) toast(r.warn || "연결 성공!", r.warn ? "warn" : "ok");
+  else { toast("연결 실패: " + r.error, "error"); const d = $("#ov-settings details"); if (d) d.open = true; }
 };
 $("#btn-choose").onclick = async () => { const p = await api.choose_folder(); if (p) $("#s-out").value = p; };
 
