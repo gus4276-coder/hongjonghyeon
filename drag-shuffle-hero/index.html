@@ -6,17 +6,13 @@
 <title>Drag Shuffle Hero</title>
 <style>
   :root {
-    --bg: #0b0d14;
-    --fg: #f4f5fa;
-    --muted: #9aa0b4;
-    --accent: #7c5cff;
-    --accent-2: #ff5c9d;
-    --gap: 10px;
+    --bg: #0b0d14; --fg: #f4f5fa; --muted: #9aa0b4;
+    --accent: #7c5cff; --accent-2: #ff5c9d;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
   body {
-    min-height: 100vh;
+    min-height: 100vh; overflow-x: hidden;
     background:
       radial-gradient(900px 500px at 85% 10%, rgba(124,92,255,.25), transparent 60%),
       radial-gradient(700px 500px at 5% 90%, rgba(255,92,157,.16), transparent 60%),
@@ -25,10 +21,7 @@
     font-family: -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  header {
-    max-width: 1200px; margin: 0 auto; padding: 22px 24px;
-    display: flex; align-items: center; justify-content: space-between;
-  }
+  header { max-width: 1200px; margin: 0 auto; padding: 22px 24px; display: flex; align-items: center; justify-content: space-between; }
   .logo { font-weight: 800; letter-spacing: -.02em; font-size: 18px; }
   .logo b { color: var(--accent); }
   nav { display: flex; gap: 22px; color: var(--muted); font-size: 14px; }
@@ -41,69 +34,62 @@
     min-height: calc(100vh - 80px);
   }
   .badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 6px 12px; border-radius: 999px; font-size: 13px; color: var(--muted);
+    display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: 13px; color: var(--muted);
     border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04);
   }
   .badge i { width: 8px; height: 8px; border-radius: 50%; background: #3ddc97; box-shadow: 0 0 10px #3ddc97; }
-  h1 {
-    margin: 18px 0 16px; font-size: clamp(38px, 5.6vw, 68px); line-height: 1.05; letter-spacing: -.035em;
-  }
-  h1 span {
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
+  h1 { margin: 18px 0 16px; font-size: clamp(38px, 5.6vw, 68px); line-height: 1.05; letter-spacing: -.035em; }
+  h1 span { background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   p.sub { color: var(--muted); font-size: 18px; line-height: 1.6; max-width: 46ch; margin: 0 0 30px; }
   .cta { display: flex; flex-wrap: wrap; gap: 12px; }
-  button, .btn {
-    font: inherit; cursor: pointer; border: 0; border-radius: 12px; padding: 14px 22px; font-weight: 600; font-size: 15px;
-    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
-  }
+  button { font: inherit; cursor: pointer; border: 0; border-radius: 12px; padding: 14px 22px; font-weight: 600; font-size: 15px; transition: transform .15s ease, background .2s ease; }
   .btn-primary { color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 8px 28px rgba(124,92,255,.4); }
   .btn-primary:hover { transform: translateY(-2px); }
   .btn-ghost { color: var(--fg); background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); }
   .btn-ghost:hover { background: rgba(255,255,255,.12); }
-  .btn-ghost[aria-pressed="true"] { background: rgba(61,220,151,.15); border-color: rgba(61,220,151,.5); }
   button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
   .hint { margin-top: 22px; font-size: 13px; color: var(--muted); }
-  .hint kbd {
-    padding: 2px 7px; border-radius: 6px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); font: inherit;
-  }
-  .stats { display: flex; gap: 32px; margin-top: 34px; }
-  .stats div b { display: block; font-size: 24px; letter-spacing: -.02em; }
-  .stats div span { font-size: 13px; color: var(--muted); }
+  .hint kbd { padding: 2px 7px; border-radius: 6px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); font: inherit; }
 
-  /* Board */
-  .board-wrap { position: relative; }
-  .board {
-    position: relative; width: 100%; aspect-ratio: 1 / 1; max-width: 560px; margin-left: auto;
-    touch-action: none; user-select: none; -webkit-user-select: none;
+  /* ---- Card stack ---- */
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 26px; }
+  .stack {
+    position: relative; width: min(340px, 78vw); aspect-ratio: 3 / 4;
+    touch-action: pan-y; user-select: none; -webkit-user-select: none;
   }
-  .tile {
-    position: absolute; left: 0; top: 0; border-radius: 16px; cursor: grab;
-    display: grid; place-items: center; color: rgba(255,255,255,.92);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 6px 18px rgba(0,0,0,.35);
-    transition: transform .45s cubic-bezier(.2,.9,.25,1.05), box-shadow .2s ease, filter .2s ease;
+  .card {
+    position: absolute; inset: 0; border-radius: 24px; padding: 26px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    color: #fff; cursor: grab; overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 24px 50px rgba(0,0,0,.45);
+    transition: transform .45s cubic-bezier(.2,.9,.25,1.05), opacity .35s ease, box-shadow .2s ease;
     will-change: transform;
   }
-  .tile .glyph { font-size: clamp(22px, 4.2vw, 40px); font-weight: 800; text-shadow: 0 2px 10px rgba(0,0,0,.25); pointer-events: none; }
-  .tile .num { position: absolute; left: 10px; top: 8px; font-size: 11px; opacity: .65; font-weight: 700; pointer-events: none; }
-  .tile:hover { filter: brightness(1.12); }
-  .tile.dragging {
-    transition: box-shadow .2s ease; cursor: grabbing; z-index: 10; filter: brightness(1.15);
-    box-shadow: 0 24px 50px rgba(0,0,0,.55), 0 0 0 2px rgba(255,255,255,.7);
+  .card::after { /* soft shine */
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(120% 70% at 0% 0%, rgba(255,255,255,.25), transparent 55%);
   }
-  .tile.settling { z-index: 9; }
-  .tile.over { box-shadow: 0 0 0 2px var(--accent), 0 6px 18px rgba(0,0,0,.35); }
+  .card .top { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; opacity: .85; }
+  .card .glyph { font-size: 96px; line-height: 1; text-align: center; filter: drop-shadow(0 8px 16px rgba(0,0,0,.3)); pointer-events: none; }
+  .card h3 { margin: 0 0 6px; font-size: 26px; letter-spacing: -.02em; }
+  .card p { margin: 0; font-size: 14px; opacity: .85; line-height: 1.5; }
+  .card.top-card:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 30px 60px rgba(0,0,0,.55); }
+  .card.dragging { transition: box-shadow .2s ease; cursor: grabbing; }
+  .card.flying { transition: transform .32s cubic-bezier(.4,.1,.6,1), opacity .32s ease; pointer-events: none; }
+  .card.snap { transition: none; }
+  .card:not(.top-card) { cursor: default; }
+
+  .controls { display: flex; align-items: center; gap: 18px; }
+  .round { width: 48px; height: 48px; padding: 0; border-radius: 50%; font-size: 20px; }
+  .dots { display: flex; gap: 8px; }
+  .dots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.2); transition: all .3s ease; }
+  .dots i.on { width: 24px; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
 
   @media (max-width: 860px) {
-    .hero { grid-template-columns: 1fr; gap: 36px; padding-top: 8px; min-height: 0; }
-    .board { margin: 0 auto; }
+    .hero { grid-template-columns: 1fr; gap: 40px; padding-top: 8px; min-height: 0; }
     nav { display: none; }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .tile { transition-duration: .01s; }
-  }
+  @media (prefers-reduced-motion: reduce) { .card, .card.flying { transition-duration: .01s; } }
 </style>
 </head>
 <body>
@@ -115,173 +101,188 @@
 <main class="hero">
   <section>
     <span class="badge"><i></i> 인터랙티브 샘플 · v1.0</span>
-    <h1>끌어서 섞고,<br><span>나만의 순서</span>로.</h1>
-    <p class="sub">오른쪽 타일을 마우스나 손가락으로 끌어 다른 타일 위에 놓아 보세요. 자리가 즉시 바뀌고, 자동 셔플로 계속 움직이는 히어로 화면을 만들 수 있습니다.</p>
+    <h1>맨 앞 카드를<br><span>옆으로 끌어</span> 넘기세요.</h1>
+    <p class="sub">겹쳐 쌓인 카드의 맨 앞 장을 좌우로 끌면 맨 뒤로 들어가고, 다음 카드가 앞으로 올라옵니다. 끝없이 이어지는 카드 셔플 히어로입니다.</p>
     <div class="cta">
-      <button class="btn btn-primary" id="shuffleBtn" type="button">🔀 지금 섞기</button>
-      <button class="btn btn-ghost" id="autoBtn" type="button" aria-pressed="true">⏱ 자동 셔플 ON</button>
-      <button class="btn btn-ghost" id="resetBtn" type="button">↺ 초기화</button>
+      <button class="btn-primary" id="nextBtn" type="button">다음 카드 →</button>
+      <button class="btn-ghost" id="autoBtn" type="button" aria-pressed="false">▶ 자동 넘기기</button>
     </div>
-    <p class="hint">타일을 <kbd>드래그</kbd>해서 다른 타일 위에 <kbd>드롭</kbd> · 이동 횟수: <b id="moves">0</b></p>
-    <div class="stats">
-      <div><b>16</b><span>타일</span></div>
-      <div><b>60fps</b><span>부드러운 전환</span></div>
-      <div><b>Touch</b><span>모바일 지원</span></div>
-    </div>
+    <p class="hint"><kbd>드래그</kbd> 또는 <kbd>←</kbd> <kbd>→</kbd> 키 · 넘긴 횟수: <b id="moves">0</b></p>
   </section>
 
-  <section class="board-wrap">
-    <div class="board" id="board" aria-label="드래그로 섞을 수 있는 타일 보드"></div>
+  <section class="stage">
+    <div class="stack" id="stack" tabindex="0" aria-label="카드 스택. 맨 앞 카드를 좌우로 끌어 넘기세요."></div>
+    <div class="controls">
+      <button class="btn-ghost round" id="prevBtn" type="button" aria-label="이전 카드">←</button>
+      <div class="dots" id="dots" aria-hidden="true"></div>
+      <button class="btn-ghost round" id="nextBtn2" type="button" aria-label="다음 카드">→</button>
+    </div>
   </section>
 </main>
 
 <script>
 (() => {
-  const COLS = 4, ROWS = 4, N = COLS * ROWS;
-  const GLYPHS = ['●','▲','■','◆','★','✦','♥','☀','◐','✿','♪','✱','✚','▼','⚡','❖'];
-  const board = document.getElementById('board');
+  const CARDS = [
+    { glyph: '🚀', title: '빠른 시작',  desc: '몇 분 만에 첫 화면을 띄우세요.',      a: '#7c5cff', b: '#4b2fd1' },
+    { glyph: '🎨', title: '자유로운 디자인', desc: '색과 레이아웃을 마음대로 바꿔요.',  a: '#ff5c9d', b: '#c2255c' },
+    { glyph: '⚡', title: '가벼운 성능',  desc: '라이브러리 없이 60fps로 동작해요.',   a: '#ffb020', b: '#e8590c' },
+    { glyph: '🌿', title: '친환경 모션',  desc: '모션 줄이기 설정을 존중합니다.',     a: '#34d399', b: '#0f9d6b' },
+    { glyph: '🔒', title: '안전한 기본값', desc: '외부 요청 없이 로컬에서 실행돼요.',  a: '#38bdf8', b: '#2563eb' },
+    { glyph: '📱', title: '모바일 지원',  desc: '터치 스와이프도 똑같이 동작해요.',   a: '#a78bfa', b: '#7e22ce' },
+  ];
+  const N = CARDS.length, VISIBLE = 4, THRESHOLD = 90;
+  const stack = document.getElementById('stack');
+  const dotsEl = document.getElementById('dots');
   const movesEl = document.getElementById('moves');
   const autoBtn = document.getElementById('autoBtn');
-  const GAP = 10;
 
-  // order[slot] = tile id
-  let order = Array.from({ length: N }, (_, i) => i);
-  let moves = 0, size = 0, cell = 0, auto = true, autoTimer = null;
-  const tiles = [];
+  let order = CARDS.map((_, i) => i);   // order[0] = front card
+  let moves = 0, drag = null, busy = false, autoTimer = null, auto = false;
 
-  for (let i = 0; i < N; i++) {
-    const t = document.createElement('div');
-    t.className = 'tile';
-    t.dataset.id = i;
-    const h = Math.round((i / N) * 320 + 230) % 360;
-    t.style.background = `linear-gradient(145deg, hsl(${h} 80% 62%), hsl(${(h + 40) % 360} 75% 42%))`;
-    t.innerHTML = `<span class="num">${String(i + 1).padStart(2, '0')}</span><span class="glyph">${GLYPHS[i]}</span>`;
-    board.appendChild(t);
-    tiles.push(t);
-  }
+  const els = CARDS.map((c, i) => {
+    const el = document.createElement('article');
+    el.className = 'card';
+    el.style.background = `linear-gradient(150deg, ${c.a}, ${c.b})`;
+    el.innerHTML = `
+      <div class="top"><span>${String(i + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')}</span><span>●●●</span></div>
+      <div class="glyph">${c.glyph}</div>
+      <div><h3>${c.title}</h3><p>${c.desc}</p></div>`;
+    stack.appendChild(el);
+    const d = document.createElement('i');
+    dotsEl.appendChild(d);
+    return el;
+  });
+  const dots = [...dotsEl.children];
 
-  const slotXY = s => ({ x: (s % COLS) * (cell + GAP), y: Math.floor(s / COLS) * (cell + GAP) });
-  const slotOf = id => order.indexOf(id);
+  const restTransform = depth => {
+    const y = depth * 16, s = 1 - depth * 0.05, r = depth === 0 ? 0 : (depth % 2 ? 2.5 : -2.5) * Math.min(depth, 2) * 0.6;
+    return `translate(0px, ${y}px) scale(${s}) rotate(${r}deg)`;
+  };
 
-  function place(t, s) {
-    const { x, y } = slotXY(s);
-    t.style.transform = `translate(${x}px, ${y}px)`;
-  }
-  function layout() {
-    size = board.clientWidth;
-    cell = (size - GAP * (COLS - 1)) / COLS;
-    tiles.forEach((t, id) => {
-      t.style.width = t.style.height = cell + 'px';
-      if (!t.classList.contains('dragging')) place(t, slotOf(id));
+  function render(skip) {
+    order.forEach((id, depth) => {
+      if (id === skip) return;
+      const el = els[id];
+      el.style.zIndex = N - depth;
+      el.style.transform = restTransform(depth);
+      el.style.opacity = depth < VISIBLE ? 1 : 0;
+      el.classList.toggle('top-card', depth === 0);
+      el.style.pointerEvents = depth === 0 ? 'auto' : 'none';
     });
+    dots.forEach((d, i) => d.classList.toggle('on', i === order[0]));
   }
-  new ResizeObserver(layout).observe(board);
-  layout();
+  render();
 
   function setMoves(n) { moves = n; movesEl.textContent = n; }
 
-  function swapSlots(a, b) {
-    [order[a], order[b]] = [order[b], order[a]];
-    tiles.forEach((t, id) => { if (!t.classList.contains('dragging')) place(t, slotOf(id)); });
+  // Send the front card off to `dir` (+1 right, -1 left), move it to the back.
+  function sendFront(dir, fromX = 0, fromY = 0, fromRot = 0) {
+    if (busy) return;
+    busy = true;
+    const id = order[0], el = els[id];
+    // data first: front -> back, next card comes forward immediately
+    order.push(order.shift());
+    setMoves(moves + 1);
+
+    el.classList.remove('dragging');
+    el.classList.add('flying');
+    el.style.zIndex = N + 2;                           // stays above while leaving
+    el.style.transform = `translate(${dir * 130 + fromX / 3}%, ${fromY}px) rotate(${dir * 18 + fromRot}deg)`;
+    el.style.opacity = 0;
+    render(id);
+
+    setTimeout(() => {
+      // jump (no animation) to the back slot, then fade in
+      el.classList.remove('flying');
+      el.classList.add('snap');
+      el.style.transform = restTransform(N - 1);
+      el.style.opacity = 0;
+      void el.offsetWidth;
+      el.classList.remove('snap');
+      render();
+      busy = false;
+    }, 330);
+  }
+
+  // Bring the last card back to the front (prev button).
+  function bringBack() {
+    if (busy) return;
+    busy = true;
+    const id = order[N - 1], el = els[id];
+    el.classList.add('snap');
+    el.style.zIndex = N + 2;
+    el.style.transform = 'translate(-130%, 0px) rotate(-18deg)';
+    el.style.opacity = 0;
+    void el.offsetWidth;
+    el.classList.remove('snap');
+    order.unshift(order.pop());
+    setMoves(moves + 1);
+    render();
+    setTimeout(() => { busy = false; }, 330);
   }
 
   // ---- Drag ----
-  let drag = null;
-  board.addEventListener('pointerdown', e => {
-    const t = e.target.closest('.tile');
-    if (!t || e.button > 0) return;
-    const id = +t.dataset.id;
-    const rect = board.getBoundingClientRect();
-    const { x, y } = slotXY(slotOf(id));
-    drag = {
-      id, el: t, pointerId: e.pointerId, from: slotOf(id), cur: slotOf(id),
-      dx: e.clientX - rect.left - x, dy: e.clientY - rect.top - y,
-    };
-    t.classList.remove('settling');
-    t.classList.add('dragging');
-    t.setPointerCapture(e.pointerId);
-    pauseAuto();
-    e.preventDefault();
+  stack.addEventListener('pointerdown', e => {
+    const el = e.target.closest('.card');
+    if (busy || !el || !el.classList.contains('top-card') || e.button > 0) return;
+    drag = { el, id: e.pointerId, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, t0: performance.now() };
+    el.classList.add('dragging');
+    el.setPointerCapture(e.pointerId);
+    stopAuto(true);
   });
-
-  board.addEventListener('pointermove', e => {
-    if (!drag || e.pointerId !== drag.pointerId) return;
-    const rect = board.getBoundingClientRect();
-    const px = e.clientX - rect.left, py = e.clientY - rect.top;
-    drag.el.style.transform = `translate(${px - drag.dx}px, ${py - drag.dy}px) scale(1.06)`;
-    // target slot under the pointer
-    const c = Math.min(COLS - 1, Math.max(0, Math.floor(px / (cell + GAP))));
-    const r = Math.min(ROWS - 1, Math.max(0, Math.floor(py / (cell + GAP))));
-    const target = r * COLS + c;
-    tiles.forEach(t => t.classList.remove('over'));
-    if (target !== drag.cur) {
-      tiles[order[target]].classList.add('over');
-    }
+  stack.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    drag.dx = e.clientX - drag.x0;
+    drag.dy = (e.clientY - drag.y0) * 0.35;
+    drag.el.style.transform = `translate(${drag.dx}px, ${drag.dy}px) rotate(${drag.dx / 18}deg)`;
+    // next card rises as the front card is pulled away
+    const p = Math.min(1, Math.abs(drag.dx) / THRESHOLD);
+    const next = els[order[1]];
+    next.style.transition = 'none';
+    next.style.transform = `translate(0px, ${16 - 16 * p}px) scale(${0.95 + 0.05 * p}) rotate(0deg)`;
   });
-
   function endDrag(e) {
-    if (!drag || e.pointerId !== drag.pointerId) return;
-    const rect = board.getBoundingClientRect();
-    const px = e.clientX - rect.left, py = e.clientY - rect.top;
-    const c = Math.min(COLS - 1, Math.max(0, Math.floor(px / (cell + GAP))));
-    const r = Math.min(ROWS - 1, Math.max(0, Math.floor(py / (cell + GAP))));
-    const target = r * COLS + c;
-    const el = drag.el;
-    tiles.forEach(t => t.classList.remove('over'));
-    if (e.type !== 'pointercancel' && target !== drag.cur) {
-      swapSlots(drag.cur, target);
-      setMoves(moves + 1);
-    }
-    el.classList.remove('dragging');
-    el.classList.add('settling');
-    place(el, slotOf(drag.id));
-    setTimeout(() => el.classList.remove('settling'), 480);
+    if (!drag || e.pointerId !== drag.id) return;
+    const { el, dx, dy, t0 } = drag;
+    const v = Math.abs(dx) / Math.max(1, performance.now() - t0);   // px/ms
+    const go = e.type !== 'pointercancel' && (Math.abs(dx) > THRESHOLD || (v > 0.5 && Math.abs(dx) > 30));
     drag = null;
-    resumeAuto();
-  }
-  board.addEventListener('pointerup', endDrag);
-  board.addEventListener('pointercancel', endDrag);
-
-  // ---- Shuffle ----
-  function shuffle() {
-    if (drag) return;
-    for (let i = N - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [order[i], order[j]] = [order[j], order[i]];
+    els[order[1]].style.transition = '';
+    if (go) {
+      // continue from where the finger left it (translate in px -> convert via current transform)
+      el.classList.remove('dragging');
+      el.classList.add('snap');
+      el.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx / 18}deg)`;
+      void el.offsetWidth;
+      el.classList.remove('snap');
+      sendFront(dx > 0 ? 1 : -1, 0, dy, dx / 18 - (dx > 0 ? 18 : -18));
+    } else {
+      el.classList.remove('dragging');
+      render();
     }
-    tiles.forEach((t, id) => place(t, slotOf(id)));
-    setMoves(moves + 1);
+    if (auto) startAuto();
   }
-  function reset() {
-    if (drag) return;
-    order = Array.from({ length: N }, (_, i) => i);
-    tiles.forEach((t, id) => place(t, id));
-    setMoves(0);
-  }
+  stack.addEventListener('pointerup', endDrag);
+  stack.addEventListener('pointercancel', endDrag);
 
-  // ---- Auto shuffle (swap 2 random tiles) ----
-  function tick() {
-    if (drag) return;
-    const a = Math.floor(Math.random() * N);
-    let b; do { b = Math.floor(Math.random() * N); } while (b === a);
-    swapSlots(a, b);
-  }
-  function startAuto() { stopAuto(); autoTimer = setInterval(tick, 1800); }
-  function stopAuto() { clearInterval(autoTimer); autoTimer = null; }
-  function pauseAuto() { stopAuto(); }
-  function resumeAuto() { if (auto) startAuto(); }
+  // ---- Controls ----
+  const next = () => sendFront(Math.random() < 0.5 ? -1 : 1);
+  document.getElementById('nextBtn').addEventListener('click', next);
+  document.getElementById('nextBtn2').addEventListener('click', next);
+  document.getElementById('prevBtn').addEventListener('click', bringBack);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') sendFront(1);
+    else if (e.key === 'ArrowLeft') sendFront(-1);
+  });
 
-  document.getElementById('shuffleBtn').addEventListener('click', shuffle);
-  document.getElementById('resetBtn').addEventListener('click', reset);
+  function startAuto() { stopAuto(true); autoTimer = setInterval(() => { if (!drag) next(); }, 2200); }
+  function stopAuto(keepFlag) { clearInterval(autoTimer); autoTimer = null; }
   autoBtn.addEventListener('click', () => {
     auto = !auto;
     autoBtn.setAttribute('aria-pressed', auto);
-    autoBtn.textContent = auto ? '⏱ 자동 셔플 ON' : '⏱ 자동 셔플 OFF';
+    autoBtn.textContent = auto ? '⏸ 자동 넘기기 중지' : '▶ 자동 넘기기';
     auto ? startAuto() : stopAuto();
   });
-
-  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) startAuto();
-  else { auto = false; autoBtn.setAttribute('aria-pressed', false); autoBtn.textContent = '⏱ 자동 셔플 OFF'; }
 })();
 </script>
 </body>
