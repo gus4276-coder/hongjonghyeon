@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drag Shuffle Hero</title>
+<style>
+  :root {
+    --bg: #0b0d14;
+    --fg: #f4f5fa;
+    --muted: #9aa0b4;
+    --accent: #7c5cff;
+    --accent-2: #ff5c9d;
+    --gap: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(900px 500px at 85% 10%, rgba(124,92,255,.25), transparent 60%),
+      radial-gradient(700px 500px at 5% 90%, rgba(255,92,157,.16), transparent 60%),
+      var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    max-width: 1200px; margin: 0 auto; padding: 22px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo { font-weight: 800; letter-spacing: -.02em; font-size: 18px; }
+  .logo b { color: var(--accent); }
+  nav { display: flex; gap: 22px; color: var(--muted); font-size: 14px; }
+  nav a { color: inherit; text-decoration: none; }
+  nav a:hover { color: var(--fg); }
+
+  .hero {
+    max-width: 1200px; margin: 0 auto; padding: 24px 24px 64px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center;
+    min-height: calc(100vh - 80px);
+  }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 999px; font-size: 13px; color: var(--muted);
+    border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04);
+  }
+  .badge i { width: 8px; height: 8px; border-radius: 50%; background: #3ddc97; box-shadow: 0 0 10px #3ddc97; }
+  h1 {
+    margin: 18px 0 16px; font-size: clamp(38px, 5.6vw, 68px); line-height: 1.05; letter-spacing: -.035em;
+  }
+  h1 span {
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  p.sub { color: var(--muted); font-size: 18px; line-height: 1.6; max-width: 46ch; margin: 0 0 30px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; }
+  button, .btn {
+    font: inherit; cursor: pointer; border: 0; border-radius: 12px; padding: 14px 22px; font-weight: 600; font-size: 15px;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .btn-primary { color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 8px 28px rgba(124,92,255,.4); }
+  .btn-primary:hover { transform: translateY(-2px); }
+  .btn-ghost { color: var(--fg); background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); }
+  .btn-ghost:hover { background: rgba(255,255,255,.12); }
+  .btn-ghost[aria-pressed="true"] { background: rgba(61,220,151,.15); border-color: rgba(61,220,151,.5); }
+  button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  .hint { margin-top: 22px; font-size: 13px; color: var(--muted); }
+  .hint kbd {
+    padding: 2px 7px; border-radius: 6px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); font: inherit;
+  }
+  .stats { display: flex; gap: 32px; margin-top: 34px; }
+  .stats div b { display: block; font-size: 24px; letter-spacing: -.02em; }
+  .stats div span { font-size: 13px; color: var(--muted); }
+
+  /* Board */
+  .board-wrap { position: relative; }
+  .board {
+    position: relative; width: 100%; aspect-ratio: 1 / 1; max-width: 560px; margin-left: auto;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+  }
+  .tile {
+    position: absolute; left: 0; top: 0; border-radius: 16px; cursor: grab;
+    display: grid; place-items: center; color: rgba(255,255,255,.92);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 6px 18px rgba(0,0,0,.35);
+    transition: transform .45s cubic-bezier(.2,.9,.25,1.05), box-shadow .2s ease, filter .2s ease;
+    will-change: transform;
+  }
+  .tile .glyph { font-size: clamp(22px, 4.2vw, 40px); font-weight: 800; text-shadow: 0 2px 10px rgba(0,0,0,.25); pointer-events: none; }
+  .tile .num { position: absolute; left: 10px; top: 8px; font-size: 11px; opacity: .65; font-weight: 700; pointer-events: none; }
+  .tile:hover { filter: brightness(1.12); }
+  .tile.dragging {
+    transition: box-shadow .2s ease; cursor: grabbing; z-index: 10; filter: brightness(1.15);
+    box-shadow: 0 24px 50px rgba(0,0,0,.55), 0 0 0 2px rgba(255,255,255,.7);
+  }
+  .tile.settling { z-index: 9; }
+  .tile.over { box-shadow: 0 0 0 2px var(--accent), 0 6px 18px rgba(0,0,0,.35); }
+
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; gap: 36px; padding-top: 8px; min-height: 0; }
+    .board { margin: 0 auto; }
+    nav { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tile { transition-duration: .01s; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Shuffle<b>.</b>io</div>
+  <nav><a href="#">제품</a><a href="#">가격</a><a href="#">문서</a><a href="#">로그인</a></nav>
+</header>
+
+<main class="hero">
+  <section>
+    <span class="badge"><i></i> 인터랙티브 샘플 · v1.0</span>
+    <h1>끌어서 섞고,<br><span>나만의 순서</span>로.</h1>
+    <p class="sub">오른쪽 타일을 마우스나 손가락으로 끌어 다른 타일 위에 놓아 보세요. 자리가 즉시 바뀌고, 자동 셔플로 계속 움직이는 히어로 화면을 만들 수 있습니다.</p>
+    <div class="cta">
+      <button class="btn btn-primary" id="shuffleBtn" type="button">🔀 지금 섞기</button>
+      <button class="btn btn-ghost" id="autoBtn" type="button" aria-pressed="true">⏱ 자동 셔플 ON</button>
+      <button class="btn btn-ghost" id="resetBtn" type="button">↺ 초기화</button>
+    </div>
+    <p class="hint">타일을 <kbd>드래그</kbd>해서 다른 타일 위에 <kbd>드롭</kbd> · 이동 횟수: <b id="moves">0</b></p>
+    <div class="stats">
+      <div><b>16</b><span>타일</span></div>
+      <div><b>60fps</b><span>부드러운 전환</span></div>
+      <div><b>Touch</b><span>모바일 지원</span></div>
+    </div>
+  </section>
+
+  <section class="board-wrap">
+    <div class="board" id="board" aria-label="드래그로 섞을 수 있는 타일 보드"></div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const COLS = 4, ROWS = 4, N = COLS * ROWS;
+  const GLYPHS = ['●','▲','■','◆','★','✦','♥','☀','◐','✿','♪','✱','✚','▼','⚡','❖'];
+  const board = document.getElementById('board');
+  const movesEl = document.getElementById('moves');
+  const autoBtn = document.getElementById('autoBtn');
+  const GAP = 10;
+
+  // order[slot] = tile id
+  let order = Array.from({ length: N }, (_, i) => i);
+  let moves = 0, size = 0, cell = 0, auto = true, autoTimer = null;
+  const tiles = [];
+
+  for (let i = 0; i < N; i++) {
+    const t = document.createElement('div');
+    t.className = 'tile';
+    t.dataset.id = i;
+    const h = Math.round((i / N) * 320 + 230) % 360;
+    t.style.background = `linear-gradient(145deg, hsl(${h} 80% 62%), hsl(${(h + 40) % 360} 75% 42%))`;
+    t.innerHTML = `<span class="num">${String(i + 1).padStart(2, '0')}</span><span class="glyph">${GLYPHS[i]}</span>`;
+    board.appendChild(t);
+    tiles.push(t);
+  }
+
+  const slotXY = s => ({ x: (s % COLS) * (cell + GAP), y: Math.floor(s / COLS) * (cell + GAP) });
+  const slotOf = id => order.indexOf(id);
+
+  function place(t, s) {
+    const { x, y } = slotXY(s);
+    t.style.transform = `translate(${x}px, ${y}px)`;
+  }
+  function layout() {
+    size = board.clientWidth;
+    cell = (size - GAP * (COLS - 1)) / COLS;
+    tiles.forEach((t, id) => {
+      t.style.width = t.style.height = cell + 'px';
+      if (!t.classList.contains('dragging')) place(t, slotOf(id));
+    });
+  }
+  new ResizeObserver(layout).observe(board);
+  layout();
+
+  function setMoves(n) { moves = n; movesEl.textContent = n; }
+
+  function swapSlots(a, b) {
+    [order[a], order[b]] = [order[b], order[a]];
+    tiles.forEach((t, id) => { if (!t.classList.contains('dragging')) place(t, slotOf(id)); });
+  }
+
+  // ---- Drag ----
+  let drag = null;
+  board.addEventListener('pointerdown', e => {
+    const t = e.target.closest('.tile');
+    if (!t || e.button > 0) return;
+    const id = +t.dataset.id;
+    const rect = board.getBoundingClientRect();
+    const { x, y } = slotXY(slotOf(id));
+    drag = {
+      id, el: t, pointerId: e.pointerId, from: slotOf(id), cur: slotOf(id),
+      dx: e.clientX - rect.left - x, dy: e.clientY - rect.top - y,
+    };
+    t.classList.remove('settling');
+    t.classList.add('dragging');
+    t.setPointerCapture(e.pointerId);
+    pauseAuto();
+    e.preventDefault();
+  });
+
+  board.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    const rect = board.getBoundingClientRect();
+    const px = e.clientX - rect.left, py = e.clientY - rect.top;
+    drag.el.style.transform = `translate(${px - drag.dx}px, ${py - drag.dy}px) scale(1.06)`;
+    // target slot under the pointer
+    const c = Math.min(COLS - 1, Math.max(0, Math.floor(px / (cell + GAP))));
+    const r = Math.min(ROWS - 1, Math.max(0, Math.floor(py / (cell + GAP))));
+    const target = r * COLS + c;
+    tiles.forEach(t => t.classList.remove('over'));
+    if (target !== drag.cur) {
+      tiles[order[target]].classList.add('over');
+    }
+  });
+
+  function endDrag(e) {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    const rect = board.getBoundingClientRect();
+    const px = e.clientX - rect.left, py = e.clientY - rect.top;
+    const c = Math.min(COLS - 1, Math.max(0, Math.floor(px / (cell + GAP))));
+    const r = Math.min(ROWS - 1, Math.max(0, Math.floor(py / (cell + GAP))));
+    const target = r * COLS + c;
+    const el = drag.el;
+    tiles.forEach(t => t.classList.remove('over'));
+    if (e.type !== 'pointercancel' && target !== drag.cur) {
+      swapSlots(drag.cur, target);
+      setMoves(moves + 1);
+    }
+    el.classList.remove('dragging');
+    el.classList.add('settling');
+    place(el, slotOf(drag.id));
+    setTimeout(() => el.classList.remove('settling'), 480);
+    drag = null;
+    resumeAuto();
+  }
+  board.addEventListener('pointerup', endDrag);
+  board.addEventListener('pointercancel', endDrag);
+
+  // ---- Shuffle ----
+  function shuffle() {
+    if (drag) return;
+    for (let i = N - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    tiles.forEach((t, id) => place(t, slotOf(id)));
+    setMoves(moves + 1);
+  }
+  function reset() {
+    if (drag) return;
+    order = Array.from({ length: N }, (_, i) => i);
+    tiles.forEach((t, id) => place(t, id));
+    setMoves(0);
+  }
+
+  // ---- Auto shuffle (swap 2 random tiles) ----
+  function tick() {
+    if (drag) return;
+    const a = Math.floor(Math.random() * N);
+    let b; do { b = Math.floor(Math.random() * N); } while (b === a);
+    swapSlots(a, b);
+  }
+  function startAuto() { stopAuto(); autoTimer = setInterval(tick, 1800); }
+  function stopAuto() { clearInterval(autoTimer); autoTimer = null; }
+  function pauseAuto() { stopAuto(); }
+  function resumeAuto() { if (auto) startAuto(); }
+
+  document.getElementById('shuffleBtn').addEventListener('click', shuffle);
+  document.getElementById('resetBtn').addEventListener('click', reset);
+  autoBtn.addEventListener('click', () => {
+    auto = !auto;
+    autoBtn.setAttribute('aria-pressed', auto);
+    autoBtn.textContent = auto ? '⏱ 자동 셔플 ON' : '⏱ 자동 셔플 OFF';
+    auto ? startAuto() : stopAuto();
+  });
+
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) startAuto();
+  else { auto = false; autoBtn.setAttribute('aria-pressed', false); autoBtn.textContent = '⏱ 자동 셔플 OFF'; }
+})();
+</script>
+</body>
+</html>
